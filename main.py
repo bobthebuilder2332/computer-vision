@@ -1,20 +1,14 @@
 import cv2
 
 
-#vid = cv2.VideoCapture('video.mp4')
-vid = cv2.VideoCapture(1) # Opens the second camera (webcam) for video capture
+img = cv2.imread('image.png')
 
-vid.set(3, 640) # Sets the width of the video frame to 640 pixels
-vid.set(4, 480) # Sets the height of the video frame to 480
+imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Converts image to grayscale; remmeber opencv uses BGR format instead of RGB
 
-# Loop for playing the video
-while True:
-    success, img = vid.read() # Reads a frame from the video and stores it in img, while storing success as a boolean indicating if the read was successful
-    cv2.imshow("Video", img)
- 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+imgBlur = cv2.GaussianBlur(imgGray, (7, 7), 0) # Blurs the image using a Gaussian filter; the (7, 7) is the kernel size (must be odd), and 0 is the standard deviation in X and Y direction
 
+cv2.imshow('Gray Image', imgGray)
+cv2.imshow('Blurred Image', imgBlur)
+cv2.waitKey(0)
 
-
-cv2.destroyAllWindows() # Clean up and close all OpenCV windows
+cv2.destroyAllWindows()
