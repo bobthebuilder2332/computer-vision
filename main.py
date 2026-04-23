@@ -1,21 +1,19 @@
 import cv2
 import numpy as np
 
-img = np.zeros((512, 512, 3), np.uint8) # Matix of 0's 512 x 512 3 color channels 0-255
+img = cv2.imread('image2.jpg')
 
-img[:] = 255, 0, 0 # Changes color in matix using BGR format
+w, h = 250, 350
 
-cv2.line(img, (0, 0), (img.shape[1], img.shape[0]), (0, 255, 0), 5) # Draws a green line from the top left corner to the bottom right corner with thickness 5
+points1 = np.float32([[111, 219], [287, 188], [154, 482], [352, 440]]) # Points of the image to be transformed
+points2 = np.float32([[0, 0], [w, 0], [0, h], [w, h]]) # Points of the output image (the rectangle to which the original points will be mapped)
 
-cv2.rectangle(img, (0,0), (250, 350), (0, 0, 255), 3) # Draws a red rectangle from the top left corner to the point (250, 350) with thickness 3
+matrix = cv2.getPerspectiveTransform(points1, points2) # Calculate the perspective transformation matrix based on the corresponding points
 
-cv2.rectangle(img, (350, 350), (450, 450), (255, 255, 0), cv2.FILLED) # Draws a filled cyan rectangle from the point (350, 350) to the point (450, 450)
+imgOut = cv2.warpPerspective(img, matrix, (w, h)) # Apply the perspective transformation to the original image using the calculated matrix and specify the size of the output image (w, h)
 
-cv2.circle(img, (400, 50), 30, (255, 0, 255), 5) # Draws a magenta circle with center at (400, 50) and radius 30 with thickness 5
-
-cv2.putText(img, 'OpenCV', (10, 500), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2) # Puts the text 'OpenCV' at the point (10, 500) with font size 1 and color yellow with thickness 2
-
-cv2.imshow('', img)
+cv2.imshow('Image', img)
+cv2.imshow('ImageOut', imgOut)
 
 cv2.waitKey(0)
-cv2.destroyAllWindows() 
+cv2.destroyAllWindows()
