@@ -1,17 +1,48 @@
 import cv2
 import numpy as np
 
-faceCascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml') # Internal path for loading the Haar Cascade XML file
-img = cv2.imread('image3.png')
+frameWidth = 640
+frameHeight = 480
+video = cv2.VideoCapture(0)
+video.set(cv2.CAP_PROP_FRAME_WIDTH, frameWidth)
+video.set(cv2.CAP_PROP_FRAME_HEIGHT, frameHeight)
 
-imgGray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-faces = faceCascade.detectMultiScale(imgGray, 1.1, 4) # Detect faces of different sizes in the image, 1.1 is the scale factor and 4 is the minimum number of neighbors
+def empty(a):
+    pass
 
-for (x, y, w, h) in faces:
-    cv2.rectangle(img, (x,y), (x + w, y + h), (255, 0, 0), 2) # Draw a rectangle around the detected faces
 
-cv2.imshow('Image', img)
+cv2.namedWindow("HSV")
+cv2.resizeWindow("HSV", 640, 240)
+cv2.createTrackbar("HUE Min", "HSV", 0, 179, empty)
+cv2.createTrackbar("HUE Max", "HSV", 179, 179, empty)
+cv2.createTrackbar("SAT Min", "HSV", 0, 255, empty)
+cv2.createTrackbar("SAT Max", "HSV", 255, 255, empty)
+cv2.createTrackbar("VALUE Min", "HSV", 0, 255, empty)
+cv2.createTrackbar("VALUE Max", "HSV", 255, 255, empty)
 
-cv2.waitKey(0)
+while True:
+
+    _, frame = video.read()
+    frameHSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    h_min = cv2.getTrackbarPos("HUE Min", "HSV")
+    h_max = cv2.getTrackbarPos("HUE Max", "HSV")
+    s_min = cv2.getTrackbarPos("SAT Min", "HSV")
+    s_max = cv2.getTrackbarPos("SAT Max", "HSV")
+    v_min = cv2.getTrackbarPos("VALUE Min", "HSV")
+    v_max = cv2.getTrackbarPos("VALUE Max", "HSV")
+
+    lower = np.array([h_min, s_min, v_min])
+    upper = np.array([h_max, s_max, v_max])
+    mask = cv2.inRange(frameHSV, lower, upper)
+    result = cv2.bitwise_and(frame, frame, mask=mask)
+    mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    
+    hStack = np.hstack([frame, mask, result])
+    cv2.imshow('Horizontal Stacking', hStack)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+video.release()
 cv2.destroyAllWindows()
