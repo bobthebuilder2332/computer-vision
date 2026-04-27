@@ -1,10 +1,6 @@
 import cv2
 import numpy as np
 
-img = cv2.imread('image.png')
-
-def empty(a):
-    pass
 
 def stackImages(scale,imgArray):
     rows = len(imgArray)
@@ -37,34 +33,41 @@ def stackImages(scale,imgArray):
         ver = hor
     return ver
 
-cv2.namedWindow('TrackBars')
-cv2.resizeWindow('TrackBars', 640, 240)
-cv2.createTrackbar('Hue Min', 'TrackBars', 0, 179, empty)
-cv2.createTrackbar('Hue Max', 'TrackBars', 179, 179, empty)
-cv2.createTrackbar('Sat Min', 'TrackBars', 0, 255, empty)
-cv2.createTrackbar('Sat Max', 'TrackBars', 255, 255, empty)
-cv2.createTrackbar('Val Min', 'TrackBars', 0, 255, empty)
-cv2.createTrackbar('Val Max', 'TrackBars', 255, 255, empty)
+def getContours(img):
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) # cv2.RETR_EXTERNAL = only external contours, cv2.CHAIN_APPROX_NONE = all points of contour
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        print(area)
+        if area > 500:
+            # Make sure to visually check if every shape is included
+            cv2.drawContours(imgContours, contour, -1, (255, 0, 0), 3) # -1 = all contours, (255, 0, 0) = blue color, 3 = thickness
+            perimeter = cv2.arcLength(contour, True) # True = closed contour
+            approx = cv2.approxPolyDP(contour, .02 * perimeter, True) # Returns the reduced amount of points on the contour: 0.02 = accuracy, True = closed contour
+            objectCorners = len(approx)
+            x, y, w, h = cv2.boundingRect(approx) # Create a bounding box around the contour: x and y = top left corner, w and h = width and height of the boxcv2.rectangle(imgContours, (x, y), (x + w, y + h), (0, 255, 0), 3) # Draw bounding box: (0, 255, 0) = green color, 3 = thickness
 
-imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) # HSV used because better for color detectoin in different lighting conditions
+            if objectCorners == 3: objectType = 'Triangle'
+            elif objectCorners == 4:
+                aspectRatio = w / float(h) # Cast before to avoid rounded quotient
+                if aspectRatio > 0.95 and aspectRatio < 1.05: objectType = 'Square' # Slight error room for square
+                else: objectType = 'Rectangle'
+            elif objectCorners > 4: objectType = 'Circle' # Only works here because there are only 3 types of shapes
+            else: objectType = 'None'
 
-while True:
-    h_min = cv2.getTrackbarPos('Hue Min', 'TrackBars')
-    h_max = cv2.getTrackbarPos('Hue Max', 'TrackBars')
-    s_min = cv2.getTrackbarPos('Sat Min', 'TrackBars')
-    s_max = cv2.getTrackbarPos('Sat Max', 'TrackBars')
-    v_min = cv2.getTrackbarPos('Val Min', 'TrackBars')
-    v_max = cv2.getTrackbarPos('Val Max', 'TrackBars')
-    lower = np.array([h_min, s_min, v_min])
-    upper = np.array([h_max, s_max, v_max])
-    mask = cv2.inRange(imgHSV, lower, upper)
+            cv2.rectangle(imgContours, (x, y), (x + w, y + h), (0, 255, 0), 3) # Draw bounding box: (0, 255, 0) = green color, 3 = thickness
+            cv2.putText(imgContours, objectType, (x, y + h + 30), cv2.FONT_HERSHEY_COMPLEX, .7, (0, 255, 0), 2) # Put text in the middle of the bounding box: (0, 255, 0) = green color, 2 = thickness
 
-    imgResult = cv2.bitwise_and(img, img, mask=mask)
+img = cv2.imread('image2.png')
 
-    imgStack = stackImages(.5, ([img, imgHSV], [mask, imgResult]))
-    cv2.imshow('Stacked Images', imgStack)
+imgBlank = np.zeros_like(img) # Blank image with same dimensions as img
+imgContours = img.copy()
+imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+imgBlur = cv2.GaussianBlur(imgGray, (7, 7), 1) # Higher 3rd value = more blur
+imgCanny = cv2.Canny(imgBlur, 50, 50) # Higher 2nd and 3rd value = more edges detected
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+getContours(imgCanny)
+imgStack = stackImages(0.6, ([img, imgGray, imgBlur], [imgCanny, imgContours, imgBlank]))
+cv2.imshow('Stacked Images', imgStack)
 
-cv2.destroyAllWindows() # Outside loop to avoid weird erros with insistent windows
+cv2.waitKey(0)
+cv2.destroyAllWindows()
